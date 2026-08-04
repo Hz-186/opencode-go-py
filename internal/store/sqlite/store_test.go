@@ -285,7 +285,150 @@ func TestRealStoreWriterQueueHonorsCancellationAndClose(t *testing.T) {
 	}
 }
 
-func openRealTestStore(t *testing.T, configure func(*OpenOptions)) *Store {
+func TestRealStoreRejectsInvalidDirectTransactionInput(t *testing.T) {
+	t.Parallel()
+
+	store := openRealTestStore(t, nil)
+	err := store.Write(context.Background(), func(ctx context.Context, tx event.Transaction) error {
+		checks := []struct {
+			name string
+			run  func() error
+		}{
+			{name: "empty sequence aggregate", run: func() error {
+				_, _, err := tx.Sequence(ctx, "")
+				return err
+			}},
+			{name: "invalid event ID", run: func() error {
+				_, _, err := tx.EventByID(ctx, "not-an-event-id")
+				return err
+			}},
+			{name: "negative event sequence", run: func() error {
+				_, _, err := tx.EventAt(ctx, "fixture", -1)
+				return err
+			}},
+			{name: "negative latest sequence", run: func() error {
+				return tx.PutSequence(ctx, "fixture", event.SequenceState{Latest: -1})
+			}},
+			{name: "invalid stored event", run: func() error {
+				return tx.InsertEvent(ctx, event.StoredEvent{
+					ID: "evt_invalid", AggregateID: "fixture", Sequence: 0,
+					Type: "fixture.changed.1", Data: []byte("{\"duplicate\":1,\"duplicate\":2}\n"),
+				})
+			}},
+			{name: "NUL aggregate delete", run: func() error {
+				return tx.DeleteAggregate(ctx, "fixture\x00escape")
+			}},
+			{name: "empty projector SQL", run: func() error {
+				executor := tx.(SQLExecutor)
+				_, err := executor.ExecContext(ctx, " \n\t")
+				return err
+			}},
+		}
+		for _, check := range checks {
+			if err := check.run(); !errors.Is(err, ErrInvalidStoreInput) {
+				t.Errorf("%s error = %v, want ErrInvalidStoreInput", check.name, err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("write containing rejected direct calls: %v", err)
+	}
+}
+
+func TestRealStoreTransactionExpiresAfterWriteCallback(t *testing.T) {
+	t.Parallel()
+
+	store := openRealTestStore(t, nil)
+	var captured event.Transaction
+	if err := store.Write(context.Background(), func(_ context.Context, tx event.Transaction) error {
+		captured = tx
+		return nil
+	}); err != nil {
+		t.Fatalf("capture transaction: %v", err)
+	}
+	ctx := context.Background()
+	checks := []struct {
+		name string
+		run  func() error
+	}{
+		{name: "sequence", run: func() error { _, _, err := captured.Sequence(ctx, "fixture"); return err }},
+		{name: "event by ID", run: func() error { _, _, err := captured.EventByID(ctx, "evt_closed"); return err }},
+		{name: "event at", run: func() error { _, _, err := captured.EventAt(ctx, "fixture", 0); return err }},
+		{name: "put sequence", run: func() error {
+			return captured.PutSequence(ctx, "fixture", event.SequenceState{Latest: 0})
+		}},
+		{name: "insert event", run: func() error {
+			return captured.InsertEvent(ctx, event.StoredEvent{
+				ID: "evt_closed", AggregateID: "fixture", Sequence: 0,
+				Type: "fixture.changed.1", Data: []byte("{}\n"),
+			})
+		}},
+		{name: "delete aggregate", run: func() error { return captured.DeleteAggregate(ctx, "fixture") }},
+		{name: "projector SQL", run: func() error {
+			_, err := captured.(SQLExecutor).ExecContext(ctx, "SELECT 1")
+			return err
+		}},
+	}
+	for _, check := range checks {
+		if err := check.run(); !errors.Is(err, ErrTransactionClosed) {
+			t.Errorf("expired %s error = %v, want ErrTransactionClosed", check.name, err)
+		}
+	}
+}
+
+func TestRealStoreHistoryScanFailureIsTyped(t *testing.T) {
+	t.Parallel()
+
+	store := openRealTestStore(t, nil)
+	if err := store.Write(context.Background(), func(ctx context.Context, tx event.Transaction) error {
+		executor := tx.(SQLExecutor)
+		if _, err := executor.ExecContext(ctx,
+			"INSERT INTO event_sequence(aggregate_id, seq) VALUES (?, ?)", "fixture-corrupt", 0); err != nil {
+			return err
+		}
+		_, err := executor.ExecContext(ctx, `
+INSERT INTO event(id, aggregate_id, seq, type, data)
+VALUES (?, ?, ?, ?, ?)`, "evt_corrupt", "fixture-corrupt", "not-an-integer", "fixture.changed.1", "{}\n")
+		return err
+	}); err != nil {
+		t.Fatalf("seed malformed row: %v", err)
+	}
+	_, err := store.History(context.Background(), "fixture-corrupt", -1, 10)
+	if !errors.Is(err, ErrStorage) {
+		t.Fatalf("history scan error = %v, want typed ErrStorage", err)
+	}
+	var storageErr *StorageError
+	if !errors.As(err, &storageErr) || storageErr.Operation != "scan event history" {
+		t.Fatalf("history scan typed error = %#v, want scan event history StorageError", err)
+	}
+}
+
+func TestRealStoreRollbackFailureBreaksWriter(t *testing.T) {
+	t.Parallel()
+
+	store := openRealTestStore(t, nil)
+	callbackFailure := errors.New("callback failed")
+	err := store.Write(context.Background(), func(_ context.Context, tx event.Transaction) error {
+		if err := tx.(*sqlEventTransaction).connection.Close(); err != nil {
+			return fmt.Errorf("close transaction connection: %w", err)
+		}
+		return callbackFailure
+	})
+	if !errors.Is(err, callbackFailure) || !errors.Is(err, ErrStorage) {
+		t.Fatalf("rollback failure error = %v, want callback failure and ErrStorage", err)
+	}
+	if !store.broken.Load() {
+		t.Fatal("store did not mark writer broken after rollback failure")
+	}
+	if err := store.Write(context.Background(), func(context.Context, event.Transaction) error {
+		return nil
+	}); !errors.Is(err, ErrStoreBroken) {
+		t.Fatalf("write after rollback failure = %v, want ErrStoreBroken", err)
+	}
+}
+
+func openRealTestStore(t testing.TB, configure func(*OpenOptions)) *Store {
 	t.Helper()
 	options := DefaultOpenOptions(filepath.Join(t.TempDir(), "event.sqlite"))
 	if configure != nil {
