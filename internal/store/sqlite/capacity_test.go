@@ -111,6 +111,17 @@ FROM generated`, tenMillionEventCount)
 	}); err != nil {
 		b.Fatalf("build 10M Event fixture: %v", err)
 	}
+	var count, minimum, maximum int64
+	if err := store.readerDB.QueryRowContext(context.Background(), `
+SELECT COUNT(*), COALESCE(MIN(seq), -1), COALESCE(MAX(seq), -1)
+FROM event
+WHERE aggregate_id = 'benchmark-history'`).Scan(&count, &minimum, &maximum); err != nil {
+		b.Fatalf("verify 10M Event sequence: %v", err)
+	}
+	if count != tenMillionEventCount || minimum != 0 || maximum != tenMillionEventCount-1 {
+		b.Fatalf("10M Event sequence count/min/max = %d/%d/%d, want %d/0/%d",
+			count, minimum, maximum, tenMillionEventCount, tenMillionEventCount-1)
+	}
 	durations := make([]time.Duration, 0, b.N)
 	b.ReportMetric(tenMillionEventCount, "events")
 	b.StartTimer()

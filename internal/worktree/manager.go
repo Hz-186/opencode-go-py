@@ -97,6 +97,7 @@ type Manager struct {
 	gitPath     string
 	environment []string
 	primary     string
+	primaryPath string
 	root        string
 	rootDisplay string
 	caseMode    pathx.CaseMode
@@ -132,6 +133,10 @@ func New(options Options) (*Manager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: canonicalize primary: %w", ErrInvalidOptions, err)
 	}
+	primaryPath, err := pathx.Canonical(options.Primary, pathx.CaseSensitive)
+	if err != nil {
+		return nil, fmt.Errorf("%w: canonicalize primary operation path: %w", ErrInvalidOptions, err)
+	}
 	rootDisplay, err := filepath.Abs(options.Root)
 	if err != nil {
 		return nil, fmt.Errorf("%w: make managed root absolute: %w", ErrInvalidOptions, err)
@@ -159,6 +164,7 @@ func New(options Options) (*Manager, error) {
 		gitPath:     options.GitPath,
 		environment: append([]string(nil), options.Environment...),
 		primary:     primary,
+		primaryPath: primaryPath,
 		root:        root,
 		rootDisplay: rootDisplay,
 		caseMode:    options.CaseMode,
@@ -180,7 +186,7 @@ func (m *Manager) Create(ctx context.Context, input CreateInput) (Info, error) {
 	if err != nil {
 		return Info{}, err
 	}
-	created, err := m.git(ctx, m.primary, "worktree", "add", "--no-checkout", "-b", info.Branch, info.Directory)
+	created, err := m.git(ctx, m.primaryPath, "worktree", "add", "--no-checkout", "-b", info.Branch, info.Directory)
 	if err != nil {
 		return Info{}, fmt.Errorf("%w: git add: %w", ErrCreateFailed, safeProcessCause(created, err))
 	}
@@ -299,7 +305,7 @@ func (m *Manager) Remove(ctx context.Context, input RemoveInput) error {
 			arguments = append(arguments, "--force")
 		}
 		arguments = append(arguments, entry.Directory)
-		removed, removeErr := m.git(ctx, m.primary, arguments...)
+		removed, removeErr := m.git(ctx, m.primaryPath, arguments...)
 		next, listErr := m.entries(cleanupCtx)
 		if listErr != nil {
 			if removeErr != nil {
@@ -394,7 +400,7 @@ func (m *Manager) primaryRef(ctx context.Context) (string, error) {
 		{"rev-parse", "HEAD"},
 	}
 	for index, arguments := range commands {
-		result, err := m.git(ctx, m.primary, arguments...)
+		result, err := m.git(ctx, m.primaryPath, arguments...)
 		if err == nil {
 			value := strings.TrimSpace(string(result.Stdout))
 			if value == "" || strings.ContainsAny(value, "\r\n") {
@@ -440,7 +446,7 @@ func (m *Manager) candidate(ctx context.Context, input string) (Info, error) {
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return Info{}, fmt.Errorf("%w: inspect candidate: %w", ErrCreateFailed, err)
 		}
-		result, branchErr := m.git(ctx, m.primary, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+		result, branchErr := m.git(ctx, m.primaryPath, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
 		if branchErr == nil {
 			continue
 		}
@@ -453,7 +459,7 @@ func (m *Manager) candidate(ctx context.Context, input string) (Info, error) {
 }
 
 func (m *Manager) entries(ctx context.Context) (map[string]gitEntry, error) {
-	result, err := m.git(ctx, m.primary, "worktree", "list", "--porcelain", "-z")
+	result, err := m.git(ctx, m.primaryPath, "worktree", "list", "--porcelain", "-z")
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrListFailed, safeProcessCause(result, err))
 	}
@@ -549,7 +555,7 @@ func (m *Manager) compensate(ctx context.Context, info Info, key string) error {
 		if !ok || verified.Branch != info.Branch {
 			return fmt.Errorf("%w: ownership changed before cleanup", ErrCompensationFailed)
 		}
-		removed, removeErr := m.git(ctx, m.primary, "worktree", "remove", "--force", entry.Directory)
+		removed, removeErr := m.git(ctx, m.primaryPath, "worktree", "remove", "--force", entry.Directory)
 		next, listErr := m.entries(ctx)
 		if listErr != nil {
 			verificationErr := fmt.Errorf("%w: verify detach: %w", ErrCompensationFailed, listErr)
@@ -593,14 +599,14 @@ func (m *Manager) deleteBranch(ctx context.Context, branch string) error {
 	if !strings.HasPrefix(branch, branchPrefix) || strings.TrimPrefix(branch, branchPrefix) == "" {
 		return ErrNotOwned
 	}
-	check, checkErr := m.git(ctx, m.primary, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+	check, checkErr := m.git(ctx, m.primaryPath, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
 	if checkErr != nil {
 		if check.ExitCode == 1 {
 			return nil
 		}
 		return fmt.Errorf("%w: inspect branch: %w", ErrRemoveFailed, safeProcessCause(check, checkErr))
 	}
-	deleted, deleteErr := m.git(ctx, m.primary, "branch", "-D", branch)
+	deleted, deleteErr := m.git(ctx, m.primaryPath, "branch", "-D", branch)
 	if deleteErr != nil {
 		return fmt.Errorf("%w: delete branch: %w", ErrRemoveFailed, safeProcessCause(deleted, deleteErr))
 	}
