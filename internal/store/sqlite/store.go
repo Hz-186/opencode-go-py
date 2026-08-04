@@ -2,6 +2,7 @@
 package sqlite
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -14,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Hz-186/opencode-go-py/internal/codec"
 	"github.com/Hz-186/opencode-go-py/internal/domain"
 	"github.com/Hz-186/opencode-go-py/internal/event"
 	modernsqlite "modernc.org/sqlite"
@@ -97,6 +99,7 @@ type SQLExecutor interface {
 }
 
 type Store struct {
+	path            string
 	dsn             string
 	writerDB        *sql.DB
 	readerDB        *sql.DB
@@ -162,6 +165,9 @@ func Open(ctx context.Context, options OpenOptions) (_ *Store, returnErr error) 
 	if err := ConfigureSQLiteConnection(ctx, writer, validated.Policy); err != nil {
 		return nil, err
 	}
+	if _, err := checkSQLiteIntegrity(ctx, writer, validated.RollbackTimeout); err != nil {
+		return nil, err
+	}
 
 	readerDB, err := sql.Open(sqliteDriverName, dsn)
 	if err != nil {
@@ -182,7 +188,7 @@ func Open(ctx context.Context, options OpenOptions) (_ *Store, returnErr error) 
 	}
 
 	store := &Store{
-		dsn: dsn, writerDB: writerDB, readerDB: readerDB, writer: writer,
+		path: validated.Path, dsn: dsn, writerDB: writerDB, readerDB: readerDB, writer: writer,
 		rollbackTimeout: validated.RollbackTimeout,
 		writeToken:      make(chan struct{}, 1),
 		closeCh:         make(chan struct{}),
@@ -295,7 +301,7 @@ func (store *Store) Write(
 		}
 		rollbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), store.rollbackTimeout)
 		defer cancel()
-		if _, rollbackErr := store.writer.ExecContext(rollbackCtx, "ROLLBACK"); rollbackErr != nil {
+		if rollbackErr := rollbackEventTransaction(rollbackCtx, store.writer); rollbackErr != nil {
 			store.broken.Store(true)
 			wrapped := wrapStorage(rollbackCtx, "rollback event transaction", rollbackErr)
 			if returnErr == nil {
@@ -316,6 +322,26 @@ func (store *Store) Write(
 	}
 	active = false
 	return nil
+}
+
+// SQLite may automatically roll back a transaction after SQLITE_FULL,
+// SQLITE_IOERR, SQLITE_NOMEM, or SQLITE_BUSY. In that state a subsequent
+// ROLLBACK itself fails even though the connection is safe. Prove autocommit
+// operationally with a fresh immediate transaction instead of parsing driver
+// error strings; any failed proof permanently fences the writer.
+func rollbackEventTransaction(ctx context.Context, connection *sql.Conn) error {
+	if _, err := connection.ExecContext(ctx, "ROLLBACK"); err == nil {
+		return nil
+	} else {
+		rollbackErr := err
+		if _, err := connection.ExecContext(ctx, "BEGIN IMMEDIATE"); err != nil {
+			return errors.Join(rollbackErr, fmt.Errorf("verify automatic rollback: %w", err))
+		}
+		if _, err := connection.ExecContext(ctx, "ROLLBACK"); err != nil {
+			return errors.Join(rollbackErr, fmt.Errorf("close automatic rollback probe: %w", err))
+		}
+		return nil
+	}
 }
 
 func (store *Store) History(
@@ -351,7 +377,7 @@ LIMIT ?`, aggregateID, after, limit)
 	for rows.Next() {
 		record, err := scanStoredEvent(rows)
 		if err != nil {
-			return nil, err
+			return nil, wrapStorage(ctx, "scan event history", err)
 		}
 		if record.AggregateID != aggregateID || record.Sequence < 0 {
 			return nil, storageInvariant("scan event history", "invalid aggregate identity")
@@ -374,7 +400,7 @@ func (store *Store) Close() error {
 		<-store.writeToken
 		var closeErrors []error
 		if store.writer != nil {
-			if err := store.writer.Close(); err != nil {
+			if err := store.writer.Close(); err != nil && !errors.Is(err, sql.ErrConnDone) {
 				closeErrors = append(closeErrors, fmt.Errorf("close writer connection: %w", err))
 			}
 		}
@@ -408,6 +434,9 @@ func (transaction *sqlEventTransaction) Sequence(
 	if err := transaction.checkActive(); err != nil {
 		return event.SequenceState{}, false, err
 	}
+	if err := validateStoreIdentity("aggregate ID", aggregateID); err != nil {
+		return event.SequenceState{}, false, err
+	}
 	var latest int64
 	var owner sql.NullString
 	err := transaction.connection.QueryRowContext(ctx,
@@ -432,6 +461,9 @@ func (transaction *sqlEventTransaction) EventByID(
 	if err := transaction.checkActive(); err != nil {
 		return event.StoredEvent{}, false, err
 	}
+	if err := validateStoredEventID(id); err != nil {
+		return event.StoredEvent{}, false, err
+	}
 	record, err := scanStoredEvent(transaction.connection.QueryRowContext(ctx, `
 SELECT id, aggregate_id, seq, type, data
 FROM event
@@ -452,6 +484,13 @@ func (transaction *sqlEventTransaction) EventAt(
 ) (event.StoredEvent, bool, error) {
 	if err := transaction.checkActive(); err != nil {
 		return event.StoredEvent{}, false, err
+	}
+	if err := validateStoreIdentity("aggregate ID", aggregateID); err != nil {
+		return event.StoredEvent{}, false, err
+	}
+	if sequence < 0 {
+		return event.StoredEvent{}, false, fmt.Errorf("%w: event sequence must be non-negative",
+			ErrInvalidStoreInput)
 	}
 	record, err := scanStoredEvent(transaction.connection.QueryRowContext(ctx, `
 SELECT id, aggregate_id, seq, type, data
@@ -474,6 +513,17 @@ func (transaction *sqlEventTransaction) PutSequence(
 	if err := transaction.checkActive(); err != nil {
 		return err
 	}
+	if err := validateStoreIdentity("aggregate ID", aggregateID); err != nil {
+		return err
+	}
+	if state.Latest < 0 {
+		return fmt.Errorf("%w: latest sequence must be non-negative", ErrInvalidStoreInput)
+	}
+	if state.OwnerID != "" {
+		if err := validateStoreIdentity("owner ID", state.OwnerID); err != nil {
+			return err
+		}
+	}
 	var owner any
 	if state.OwnerID != "" {
 		owner = state.OwnerID
@@ -494,6 +544,9 @@ func (transaction *sqlEventTransaction) InsertEvent(ctx context.Context, record 
 	if err := transaction.checkActive(); err != nil {
 		return err
 	}
+	if err := validateStoredEvent(record); err != nil {
+		return err
+	}
 	_, err := transaction.connection.ExecContext(ctx, `
 INSERT INTO event(id, aggregate_id, seq, type, data)
 VALUES (?, ?, ?, ?, ?)`, record.ID, record.AggregateID, record.Sequence, record.Type, string(record.Data))
@@ -505,6 +558,9 @@ VALUES (?, ?, ?, ?, ?)`, record.ID, record.AggregateID, record.Sequence, record.
 
 func (transaction *sqlEventTransaction) DeleteAggregate(ctx context.Context, aggregateID string) error {
 	if err := transaction.checkActive(); err != nil {
+		return err
+	}
+	if err := validateStoreIdentity("aggregate ID", aggregateID); err != nil {
 		return err
 	}
 	if _, err := transaction.connection.ExecContext(ctx,
@@ -522,6 +578,10 @@ func (transaction *sqlEventTransaction) ExecContext(
 	if err := transaction.checkActive(); err != nil {
 		return nil, err
 	}
+	if strings.TrimSpace(statement) == "" || strings.IndexByte(statement, 0) >= 0 {
+		return nil, fmt.Errorf("%w: projector SQL must be non-empty without NUL",
+			ErrInvalidStoreInput)
+	}
 	result, err := transaction.connection.ExecContext(ctx, statement, arguments...)
 	if err != nil {
 		return nil, wrapStorage(ctx, "execute projector statement", err)
@@ -532,6 +592,54 @@ func (transaction *sqlEventTransaction) ExecContext(
 func (transaction *sqlEventTransaction) checkActive() error {
 	if transaction == nil || !transaction.active.Load() {
 		return ErrTransactionClosed
+	}
+	return nil
+}
+
+func validateStoreIdentity(label, value string) error {
+	if strings.TrimSpace(value) == "" || value != strings.TrimSpace(value) || strings.IndexByte(value, 0) >= 0 {
+		return fmt.Errorf("%w: %s must be non-empty without surrounding whitespace or NUL",
+			ErrInvalidStoreInput, label)
+	}
+	return nil
+}
+
+func validateStoredEventID(id domain.EventID) error {
+	if err := validateStoreIdentity("event ID", string(id)); err != nil {
+		return err
+	}
+	if _, err := domain.ParseEventID(string(id)); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidStoreInput, err)
+	}
+	return nil
+}
+
+func validateStoredEvent(record event.StoredEvent) error {
+	if err := validateStoredEventID(record.ID); err != nil {
+		return err
+	}
+	if err := validateStoreIdentity("aggregate ID", record.AggregateID); err != nil {
+		return err
+	}
+	if record.Sequence < 0 {
+		return fmt.Errorf("%w: event sequence must be non-negative", ErrInvalidStoreInput)
+	}
+	if err := validateStoreIdentity("event type", record.Type); err != nil {
+		return err
+	}
+	decoded, err := codec.DecodeJSONValue(record.Data)
+	if err != nil {
+		return fmt.Errorf("%w: invalid event data: %v", ErrInvalidStoreInput, err)
+	}
+	if decoded.Kind != domain.JSONKindObject {
+		return fmt.Errorf("%w: event data must be a JSON object", ErrInvalidStoreInput)
+	}
+	canonical, err := codec.EncodeJSONValue(decoded)
+	if err != nil {
+		return fmt.Errorf("%w: encode canonical event data: %v", ErrInvalidStoreInput, err)
+	}
+	if !bytes.Equal(record.Data, canonical) {
+		return fmt.Errorf("%w: event data must use canonical JSON bytes", ErrInvalidStoreInput)
 	}
 	return nil
 }

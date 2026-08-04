@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
@@ -434,6 +435,143 @@ func TestConfigureSQLiteConnectionRejectsInvalidPolicyAndJournalMode(t *testing.
 		t.Fatalf("journal mode error = %v", err)
 	}
 	script.assertDone(t)
+}
+
+func TestRealMigrationsRejectChecksumDriftAndDowngrade(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name string
+		seed func(*testing.T, *sql.DB)
+		want error
+	}{
+		{
+			name: "checksum drift",
+			seed: func(t *testing.T, database *sql.DB) {
+				t.Helper()
+				if _, err := database.ExecContext(context.Background(),
+					"UPDATE schema_migration SET checksum = ? WHERE id = ?",
+					strings.Repeat("f", 64), "000001_event_store"); err != nil {
+					t.Fatalf("tamper migration checksum: %v", err)
+				}
+			},
+			want: ErrMigrationChecksum,
+		},
+		{
+			name: "future migration",
+			seed: func(t *testing.T, database *sql.DB) {
+				t.Helper()
+				if _, err := database.ExecContext(context.Background(), `
+INSERT INTO schema_migration(id, checksum, time_applied)
+VALUES (?, ?, ?)`, "999999_future", strings.Repeat("9", 64), 1); err != nil {
+					t.Fatalf("insert future migration: %v", err)
+				}
+			},
+			want: ErrMigrationDowngrade,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			options := DefaultOpenOptions(filepath.Join(t.TempDir(), "migration.sqlite"))
+			store, err := Open(context.Background(), options)
+			if err != nil {
+				t.Fatalf("open migrated store: %v", err)
+			}
+			if err := store.Close(); err != nil {
+				t.Fatalf("close migrated store: %v", err)
+			}
+			database, err := sql.Open(sqliteDriverName, sqliteDSN(options))
+			if err != nil {
+				t.Fatalf("open migration tamper database: %v", err)
+			}
+			test.seed(t, database)
+			if err := database.Close(); err != nil {
+				t.Fatalf("close migration tamper database: %v", err)
+			}
+			if reopened, err := Open(context.Background(), options); !errors.Is(err, test.want) {
+				if reopened != nil {
+					_ = reopened.Close()
+				}
+				t.Fatalf("reopen migration error = %v, want %v", err, test.want)
+			}
+		})
+	}
+}
+
+func TestRealMigrationSQLAndCommitFailuresRollBackAtomically(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name      string
+		migration Migration
+		tables    []string
+	}{
+		{
+			name: "SQL failure",
+			migration: Migration{ID: "000002_sql_failure", SQL: `
+CREATE TABLE migration_sql_probe (id INTEGER PRIMARY KEY);
+INSERT INTO table_that_does_not_exist(id) VALUES (1);
+`},
+			tables: []string{"migration_sql_probe"},
+		},
+		{
+			name: "deferred constraint commit failure",
+			migration: Migration{ID: "000002_commit_failure", SQL: `
+CREATE TABLE migration_parent (id INTEGER PRIMARY KEY);
+CREATE TABLE migration_child (
+  id INTEGER PRIMARY KEY,
+  parent_id INTEGER NOT NULL,
+  FOREIGN KEY (parent_id) REFERENCES migration_parent(id) DEFERRABLE INITIALLY DEFERRED
+);
+INSERT INTO migration_child(id, parent_id) VALUES (1, 404);
+`},
+			tables: []string{"migration_parent", "migration_child"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			options := DefaultOpenOptions(filepath.Join(t.TempDir(), "migration-fault.sqlite"))
+			store, err := Open(context.Background(), options)
+			if err != nil {
+				t.Fatalf("open migrated store: %v", err)
+			}
+			if err := store.Close(); err != nil {
+				t.Fatalf("close migrated store: %v", err)
+			}
+			database, err := sql.Open(sqliteDriverName, sqliteDSN(options))
+			if err != nil {
+				t.Fatalf("open migration fault database: %v", err)
+			}
+			defer database.Close()
+			backend, err := NewSQLMigrationBackend(database, time.Second)
+			if err != nil {
+				t.Fatalf("new real migration backend: %v", err)
+			}
+			inserted, err := backend.ApplyMigration(context.Background(), test.migration, 2)
+			if inserted || !errors.Is(err, ErrMigrationApply) {
+				t.Fatalf("fault migration inserted/error = %v/%v", inserted, err)
+			}
+			for _, table := range test.tables {
+				var exists int
+				if err := database.QueryRowContext(context.Background(), `
+SELECT EXISTS (SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?)`, table).Scan(&exists); err != nil {
+					t.Fatalf("inspect rolled back table %q: %v", table, err)
+				}
+				if exists != 0 {
+					t.Fatalf("migration failure retained table %q", table)
+				}
+			}
+			var migrationRows int
+			if err := database.QueryRowContext(context.Background(),
+				"SELECT COUNT(*) FROM schema_migration WHERE id = ?", test.migration.ID,
+			).Scan(&migrationRows); err != nil {
+				t.Fatalf("inspect rolled back migration row: %v", err)
+			}
+			if migrationRows != 0 {
+				t.Fatalf("migration failure retained %d checksum rows", migrationRows)
+			}
+		})
+	}
 }
 
 type fakeMigrationBackend struct {
