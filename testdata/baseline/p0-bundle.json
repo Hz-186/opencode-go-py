@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "89130db6b0060a345548d870c51132ee71d6a828",
+  "artifacts": [
+    {
+      "path": "bun-lock-inventory.json",
+      "sha256": "7656c23b6b1a15779eb43ebde6d6cf519d70c0f1f87dced0a51e3256324b8463",
+      "bytes": 992111
+    },
+    {
+      "path": "feature-matrix.json",
+      "sha256": "6ecf94a3c510c5cf7202363f1a015bc544d18140a0672e0a35144775bfbbb9cd",
+      "bytes": 30094
+    },
+    {
+      "path": "license-evidence.json",
+      "sha256": "9c7d14c4d2b884169484f45bce37bef0c0dd5a5325a899ec8533dc39f7ab13d5",
+      "bytes": 276486
+    },
+    {
+      "path": "license-ledger.json",
+      "sha256": "ee016f7fdfd6842301caada57c0db49e2cc905a07140e137955835f59e7383e2",
+      "bytes": 405593
+    },
+    {
+      "path": "semantic-inventory.json",
+      "sha256": "2c3a1a1466fa2469f85caafcc6b9a2932453529decc1d5f6a0b6c9c730eecf36",
+      "bytes": 306700
+    },
+    {
+      "path": "semantic-self-diff.json",
+      "sha256": "7f5d56264fdb015bdc2e1d064cf05d7e4e0ce5161caaf995d9f432f21924c15c",
+      "bytes": 436
+    },
+    {
+      "path": "source-link-audit.json",
+      "sha256": "64e1bf376af29ff7bd23fb370b0336ccfe9db0ce989c8480a7bcd9ab38cd891b",
+      "bytes": 15960
+    },
+    {
+      "path": "upstream-89130db6.json",
+      "sha256": "992c76516d2a30453701a8260683acea5d6d49607fbbf19e86f8f3bb3a891d8f",
+      "bytes": 1738944
+    }
+  ]
+}

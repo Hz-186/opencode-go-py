@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "from": {
+    "commit": "89130db6b0060a345548d870c51132ee71d6a828",
+    "tree": "52743ec0bc3e5e076f3445eafeaaac9fd48684b3",
+    "branch": "dev",
+    "version": "1.18.11"
+  },
+  "to": {
+    "commit": "89130db6b0060a345548d870c51132ee71d6a828",
+    "tree": "52743ec0bc3e5e076f3445eafeaaac9fd48684b3",
+    "branch": "dev",
+    "version": "1.18.11"
+  },
+  "from_scope_policy": "ADR-0002/v1",
+  "to_scope_policy": "ADR-0002/v1",
+  "summary": {
+    "files_added": 0,
+    "files_deleted": 0,
+    "files_modified": 0,
+    "packages_added": 0,
+    "packages_deleted": 0,
+    "packages_modified": 0
+  },
+  "files": {
+    "added": [],
+    "deleted": [],
+    "modified": []
+  },
+  "packages": {
+    "added": [],
+    "deleted": [],
+    "modified": []
+  }
+}

@@ -1,0 +1,546 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "89130db6b0060a345548d870c51132ee71d6a828",
+  "valid": true,
+  "documents": [
+    {
+      "path": "IMPLEMENTATION_STATUS.md",
+      "sha256": "29c4ffd2961c27a43c65508546aaa496e0addd04bdcdcc7d8492284fc841e658",
+      "bytes": 3725
+    },
+    {
+      "path": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "sha256": "c0c4c674f8dd7f636c4fea6aed1173f45df5a5c9d5ddc0fed43d65092e18b866",
+      "bytes": 99161
+    },
+    {
+      "path": "adr/0001-go-canonical-core-and-provider-boundary.md",
+      "sha256": "5af14ab2b8e7bf504c5a07acd2b966acf8b3f99ebde099ea3ebe9e979b3e726b",
+      "bytes": 3584
+    },
+    {
+      "path": "adr/0002-conservative-baseline-scope-classification.md",
+      "sha256": "240c422166bc61455a21026c8aeca194e90d1102f4d82c09c0d0e69a49666047",
+      "bytes": 2238
+    },
+    {
+      "path": "adr/README.md",
+      "sha256": "723d10823551bb1666d990d816dd81ed94d30fb967754f1bf343c387b0366ef3",
+      "bytes": 864
+    },
+    {
+      "path": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "sha256": "d67d2a5092007d1051f4fbc73a75ecbeea3a8cdf7868fbeae6b2cb56cd86bb14",
+      "bytes": 32629
+    },
+    {
+      "path": "design/DATABASE_BLUEPRINT.md",
+      "sha256": "3afa7d5c4b155e118b425a7a1858d954e9839e2d6a007bf7ce1bfd851e6aec54",
+      "bytes": 26248
+    },
+    {
+      "path": "design/RPC_AND_TYPES_BLUEPRINT.md",
+      "sha256": "e42a66bf1a6206557beb30353f0f448316cbb67af2d9d45e623d9fe2bc112d41",
+      "bytes": 16539
+    },
+    {
+      "path": "phases/PHASE_IMPLEMENTATION_P0_P9.md",
+      "sha256": "6ddc4a0ae0e4baedfbaddb8d7b9a9d350e491e2e6fa121a61888f8eb1cc597af",
+      "bytes": 26150
+    },
+    {
+      "path": "phases/PHASE_IMPLEMENTATION_P10_P18.md",
+      "sha256": "cf506a0fbcacaef373fbde60c201a1e2919557cf5c703c51b4aa572a8be63185",
+      "bytes": 18523
+    }
+  ],
+  "links": [
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session.ts",
+      "start_line": 360,
+      "end_line": 360
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session/input.ts",
+      "start_line": 41,
+      "end_line": 41
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session/input.ts",
+      "start_line": 245,
+      "end_line": 245
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session/run-coordinator.ts",
+      "start_line": 24,
+      "end_line": 24
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session/execution/local.ts",
+      "start_line": 16,
+      "end_line": 16
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session/runner/llm.ts",
+      "start_line": 43,
+      "end_line": 43
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session/runner/llm.ts",
+      "start_line": 205,
+      "end_line": 205
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session/runner/llm.ts",
+      "start_line": 243,
+      "end_line": 243
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session/runner/llm.ts",
+      "start_line": 277,
+      "end_line": 277
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/schema/src/event.ts",
+      "start_line": 15,
+      "end_line": 15
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/event.ts",
+      "start_line": 205,
+      "end_line": 205
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/event.ts",
+      "start_line": 354,
+      "end_line": 354
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/event.ts",
+      "start_line": 565,
+      "end_line": 565
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/session/projector.ts",
+      "start_line": 211,
+      "end_line": 211
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/schema/src/session-message.ts",
+      "start_line": 44,
+      "end_line": 44
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/schema/src/session-event.ts",
+      "start_line": 291,
+      "end_line": 291
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/llm/src/schema/events.ts",
+      "start_line": 78,
+      "end_line": 78
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/llm/src/route/client.ts",
+      "start_line": 226,
+      "end_line": 226
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/llm/src/route/executor.ts",
+      "start_line": 35,
+      "end_line": 35
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/permission.ts",
+      "start_line": 76,
+      "end_line": 76
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/mcp/index.ts",
+      "start_line": 164,
+      "end_line": 164
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/mcp/index.ts",
+      "start_line": 492,
+      "end_line": 492
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/skill.ts",
+      "start_line": 73,
+      "end_line": 73
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/tool/task.ts",
+      "start_line": 92,
+      "end_line": 92
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/config/config.ts",
+      "start_line": 351,
+      "end_line": 351
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/config/config.ts",
+      "start_line": 516,
+      "end_line": 516
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/snapshot/index.ts",
+      "start_line": 319,
+      "end_line": 319
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/lsp/lsp.ts",
+      "start_line": 208,
+      "end_line": 208
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/format/index.ts",
+      "start_line": 73,
+      "end_line": 73
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/src/pty/protocol.ts",
+      "start_line": 7,
+      "end_line": 7
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/acp/service.ts",
+      "start_line": 92,
+      "end_line": 92
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/plugin/src/v2/promise/plugin.ts",
+      "start_line": 3,
+      "end_line": 3
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/codemode/src/codemode.ts",
+      "start_line": 9,
+      "end_line": 9
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/index.ts",
+      "start_line": 45,
+      "end_line": 45
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/cli/cmd/serve.ts",
+      "start_line": 13,
+      "end_line": 13
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/cli/tui/worker.ts",
+      "start_line": 23,
+      "end_line": 23
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/cli/cmd/tui.ts",
+      "start_line": 144,
+      "end_line": 144
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/server/server.ts",
+      "start_line": 73,
+      "end_line": 73
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/server/routes/instance/httpapi/server.ts",
+      "start_line": 271,
+      "end_line": 271
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/protocol/src/groups/event.ts",
+      "start_line": 33,
+      "end_line": 33
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/server/src/handlers/event.ts",
+      "start_line": 20,
+      "end_line": 20
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/protocol/src/groups/session.ts",
+      "start_line": 205,
+      "end_line": 205
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/sdk-next/src/opencode.ts",
+      "start_line": 10,
+      "end_line": 10
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/installation/index.ts",
+      "start_line": 174,
+      "end_line": 174
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/test/session-prompt.test.ts",
+      "start_line": 143,
+      "end_line": 143
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/test/session-run-coordinator.test.ts",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/test/session-runner.test.ts",
+      "start_line": 557,
+      "end_line": 557
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/test/event.test.ts",
+      "start_line": 86,
+      "end_line": 86
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/test/session-runner-tool-registry.test.ts",
+      "start_line": 61,
+      "end_line": 61
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/core/test/permission.test.ts",
+      "start_line": 105,
+      "end_line": 105
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/test/session/llm.test.ts",
+      "start_line": 175,
+      "end_line": 175
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/test/session/retry.test.ts",
+      "start_line": 35,
+      "end_line": 35
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/test/session/compaction.test.ts",
+      "start_line": 368,
+      "end_line": 368
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/test/server/httpapi-pty.test.ts",
+      "start_line": 60,
+      "end_line": 60
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/session/prompt.ts",
+      "start_line": 1052,
+      "end_line": 1052
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/session/processor.ts",
+      "start_line": 627,
+      "end_line": 627
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/session/tools.ts",
+      "start_line": 41,
+      "end_line": 41
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/permission/index.ts",
+      "start_line": 28,
+      "end_line": 28
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/opencode/src/skill/index.ts",
+      "start_line": 173,
+      "end_line": 173
+    },
+    {
+      "document": "OPENCODE_REPLICA_MASTER_PLAN.md",
+      "source_path": "packages/plugin/src/index.ts",
+      "start_line": 56,
+      "end_line": 56
+    },
+    {
+      "document": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "source_path": "packages/core/src/session.ts",
+      "start_line": 360,
+      "end_line": 360
+    },
+    {
+      "document": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/sql.ts",
+      "start_line": 140,
+      "end_line": 140
+    },
+    {
+      "document": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/input.ts",
+      "start_line": 245,
+      "end_line": 245
+    },
+    {
+      "document": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/run-coordinator.ts",
+      "start_line": 24,
+      "end_line": 24
+    },
+    {
+      "document": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/runner/llm.ts",
+      "start_line": 205,
+      "end_line": 205
+    },
+    {
+      "document": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "source_path": "packages/core/src/event.ts",
+      "start_line": 205,
+      "end_line": 205
+    },
+    {
+      "document": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "source_path": "packages/schema/src/session-event.ts",
+      "start_line": 198,
+      "end_line": 198
+    },
+    {
+      "document": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/runner/llm.ts",
+      "start_line": 43,
+      "end_line": 43
+    },
+    {
+      "document": "design/CORE_RUNTIME_BLUEPRINT.md",
+      "source_path": "packages/schema/src/session-message.ts",
+      "start_line": 82,
+      "end_line": 82
+    },
+    {
+      "document": "design/DATABASE_BLUEPRINT.md",
+      "source_path": "packages/core/src/database/schema.gen.ts",
+      "start_line": 7,
+      "end_line": 7
+    },
+    {
+      "document": "design/DATABASE_BLUEPRINT.md",
+      "source_path": "packages/core/src/event/sql.ts",
+      "start_line": 4,
+      "end_line": 4
+    },
+    {
+      "document": "design/DATABASE_BLUEPRINT.md",
+      "source_path": "packages/core/src/database/schema.gen.ts",
+      "start_line": 239,
+      "end_line": 239
+    },
+    {
+      "document": "design/DATABASE_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/sql.ts",
+      "start_line": 140,
+      "end_line": 140
+    },
+    {
+      "document": "design/DATABASE_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/sql.ts",
+      "start_line": 68,
+      "end_line": 68
+    },
+    {
+      "document": "design/DATABASE_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/sql.ts",
+      "start_line": 168,
+      "end_line": 168
+    },
+    {
+      "document": "design/DATABASE_BLUEPRINT.md",
+      "source_path": "packages/core/src/database/migration/20260603040000_session_message_projection_order.ts",
+      "start_line": 8,
+      "end_line": 8
+    },
+    {
+      "document": "design/RPC_AND_TYPES_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/runner/llm.ts",
+      "start_line": 60,
+      "end_line": 60
+    },
+    {
+      "document": "design/RPC_AND_TYPES_BLUEPRINT.md",
+      "source_path": "packages/core/src/session/runner/model.ts",
+      "start_line": 131,
+      "end_line": 131
+    },
+    {
+      "document": "design/RPC_AND_TYPES_BLUEPRINT.md",
+      "source_path": "packages/llm/src/tool.ts",
+      "start_line": 36,
+      "end_line": 36
+    },
+    {
+      "document": "design/RPC_AND_TYPES_BLUEPRINT.md",
+      "source_path": "packages/opencode/src/mcp/index.ts",
+      "start_line": 164,
+      "end_line": 164
+    },
+    {
+      "document": "design/RPC_AND_TYPES_BLUEPRINT.md",
+      "source_path": "packages/core/src/tool/registry.ts",
+      "start_line": 23,
+      "end_line": 23
+    }
+  ],
+  "issues": null
+}
